@@ -5,32 +5,67 @@ const myPeer = new Peer(undefined, {
   port: "3001",
 });
 
-const myVideo = document.createElement("video");
-var myStream;
-myVideo.muted = true;
-const peers = {};
+const PeerMediaConnections = {};
+const PeerDataConnections = {};
 
-navigator.mediaDevices
-  .getUserMedia({
-    video: true,
-    audio: true,
-  })
-  .then((stream) => {
-    addVideoStream(myVideo, stream);
-    myStream = stream;
-  });
+//Compability with other browsers
+navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
 
-//userId olabilir.
-socket.on("user-disconnected", (userId, userName, peerId) => {
-  if (peers[peerId]) peers[peerId].close();
+//If room is created create chat boxes
+socket.on("room-created", (room) => {
+  const roomElement = document.createElement("div");
+  roomElement.innerText = room;
+  const roomLink = document.createElement("a");
+  roomLink.href = `/${room}`;
+  roomLink.innerText = "join";
+  roomContainer.append(roomElement);
+  roomContainer.append(roomLink);
 });
 
+//A new user connected to channel
+socket.on("user-connected", (socketId, userName, peerId) => {
+  appendMessage(`${userName} connected`);
+  connectToNewUser(peerId, myStream);
+});
+
+//If we receive incoming connection from a peer
+myPeer.on("connection", (dataConnection) => {
+  appendMessage("incoming conn established");
+});
+
+//If a user disconnects, closes connection to other peers
+socket.on("user-disconnected", (userId, userName, peerId) => {
+  appendMessage(`${userName} disconnected`);
+  if (PeerMediaConnections[peerId]) PeerMediaConnections[peerId].close();
+  if (PeerDataConnections[peerId]) PeerDataConnections[peerId].close();
+});
+
+//connect and call the user, store the call reference in peers array
+function connectToNewUser(peerId, stream) {
+  if (stream) {
+    var streamexists = 1;
+  } else {
+    streamexists = 0;
+  }
+  const dataConn = myPeer.connect(peerId);
+  PeerDataConnections[peerId] = dataConn;
+  appendMessage("Connection to " + peerId + " stream:" + streamexists);
+  const call = myPeer.call(peerId, stream);
+  call.on("stream", (peerStream) => {
+    const video = document.createElement("video");
+    addVideoStream(video, peerStream);
+  });
+  PeerMediaConnections[peerId] = call;
+}
+
+//Audio/ Video Functions
+
+// If we receive incoming call
 myPeer.on("call", (mediaConnection) => {
   mediaConnection.answer(myStream);
   const video = document.createElement("video");
   mediaConnection.on("stream", (remoteStream) => {
     addVideoStream(video, remoteStream);
-    appendMessage("stream");
   });
   mediaConnection.on("close", () => {
     video.remove();
@@ -41,30 +76,22 @@ myPeer.on("call", (mediaConnection) => {
   });
 });
 
-myPeer.on("connection", () => {
-  appendMessage("connection established");
-});
+const myVideo = document.createElement("video");
+var myStream; // Reference to stream
+myVideo.muted = true;
 
-socket.on("user-connected", (socketId, userName, peerId) => {
-  connectToNewUser(peerId, myStream);
-});
+//Get User Video and keep reference as stream
+navigator.mediaDevices
+  .getUserMedia({
+    video: true,
+    audio: true,
+  })
+  .then((stream) => {
+    addVideoStream(myVideo, stream);
+    myStream = stream;
+  });
 
-myPeer.on("connection", (dataConnection) => {
-  appendMessage("connection established " + dataConnection.type);
-});
-
-function connectToNewUser(peerId, stream) {
-  if (stream) {
-    var streamexists = 1;
-  } else {
-    streamexists = 0;
-  }
-  myPeer.connect(peerId);
-  appendMessage("Connection to " + peerId + " stream:" + streamexists);
-  const call = myPeer.call(peerId, stream);
-  peers[peerId] = call;
-}
-
+//add
 function addVideoStream(video, stream) {
   video.srcObject = stream;
   video.addEventListener("loadedmetadata", () => {
@@ -98,26 +125,8 @@ if (messageForm != null) {
   });
 }
 
-socket.on("room-created", (room) => {
-  const roomElement = document.createElement("div");
-  roomElement.innerText = room;
-  const roomLink = document.createElement("a");
-  roomLink.href = `/${room}`;
-  roomLink.innerText = "join";
-  roomContainer.append(roomElement);
-  roomContainer.append(roomLink);
-});
-
 socket.on("chat-message", (data) => {
   appendMessage(`${data.name}: ${data.message}`);
-});
-
-socket.on("user-connected", (userId, userName) => {
-  appendMessage(`${userName} connected`);
-});
-
-socket.on("user-disconnected", (userId, userName) => {
-  appendMessage(`${userName} disconnected`);
 });
 
 function appendMessage(message) {
