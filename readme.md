@@ -6,9 +6,13 @@ For node js : install node.js
 
 ## Running 
 
-npm run devstart (will run at port 3000 statically defined)
+-npm run devstart (will run at port 3000 statically defined)  
 
-peerjs --port 3001  
+for local peerJs:  
+-peerjs --port 3001  
+  
+set the variable on script.js with a host key. more info at : https://peerjs.com/peerserver.html  
+const myPeer = new Peer(undefined, {});  
 
 App will run at localhost:3000  
 Try connecting from a different browser tab
