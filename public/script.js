@@ -194,11 +194,15 @@ var myStream; // Reference to stream
 var myMediaStream;
 myVideo.muted = true;
 
+const qualitySettings = document.getElementById("qualitySettings");
 const vgaButton = document.querySelector("#vga");
 const qvgaButton = document.querySelector("#qvga");
 const hdButton = document.querySelector("#hd");
 const fullHdButton = document.querySelector("#full-hd");
 const sharescreenButton = document.querySelector("#share-screen");
+const videoButton = document.querySelector("#videoButton");
+const audioButton = document.querySelector("#audioButton");
+
 const qvgaConstraints = {
   video: { width: { exact: 320 }, height: { exact: 240 } },
 };
@@ -211,18 +215,57 @@ const hdConstraints = {
 const fullHdConstraints = {
   video: { width: { exact: 1920 }, height: { exact: 1080 } },
 };
+
+var isVideoShared = false;
+var isAudioShared = false;
+var currentConstraints = fullHdConstraints
+
 vgaButton.onclick = () => {
-  getMedia(vgaConstraints);
+  currentConstraints = vgaConstraints
+  getMedia();
 };
 qvgaButton.onclick = () => {
-  getMedia(qvgaConstraints);
+  currentConstraints = qvgaConstraints
+  getMedia();
 };
 hdButton.onclick = () => {
-  getMedia(hdConstraints);
+  currentConstraints = hdConstraints
+  getMedia();
 };
 fullHdButton.onclick = () => {
-  getMedia(fullHdConstraints);
+  currentConstraints = fullHdConstraints
+  getMedia();
 };
+
+videoButton.onclick = () => {
+  if (isVideoShared) {
+    videoButton.innerText = "Open Camera"
+    isVideoShared = false
+    qualitySettings.hidden = true;
+    getMedia()
+  } else {
+    videoButton.innerText = "Close Camera"
+    isVideoShared = true;
+    qualitySettings.hidden = false;
+    getMedia();
+  }
+};
+
+audioButton.onclick = () => {
+  if (isAudioShared) {
+    audioButton.innerText = "Open Microphone"
+    isAudioShared = false
+    getMedia()
+  } else {
+    audioButton.innerText = "Close Microphone"
+    isAudioShared = true;
+    qualitySettings.hidden = false;
+    getMedia();
+  }
+};
+
+
+const isScreenShared = false;
 sharescreenButton.onclick = () => {
   startCaptureScreen().then(
     (stream) => {
@@ -260,8 +303,8 @@ function sendDataReadySignal() {
   socket.emit("data-ready", roomName, myPeerId);
 }
 
-function gotStream(myMediaStream) {
-  const track = myMediaStream.getVideoTracks()[0];
+function gotStream(myStream) {
+  const track = myStream.getVideoTracks()[0];
   const constraints = track.getConstraints();
   console.log("Result constraints: " + JSON.stringify(constraints));
 }
@@ -270,10 +313,10 @@ function displayVideoDimensions(whereSeen) {
   if (myVideo.videoWidth) {
     console.log(
       "Actual video dimensions: " +
-        myVideo.videoWidth +
-        "x" +
-        myVideo.videoHeight +
-        "px."
+      myVideo.videoWidth +
+      "x" +
+      myVideo.videoHeight +
+      "px."
     );
     console.log(whereSeen + ": ");
   } else {
@@ -289,26 +332,31 @@ myVideo.onresize = () => {
   displayVideoDimensions("resize");
 };
 
-function getMedia(constraints) {
-  if (myMediaStream) {
-    myMediaStream.getTracks().forEach((track) => {
+function getMedia() {
+  if (myStream) {
+    myStream.getTracks().forEach(function (track) {
       track.stop();
     });
   }
   //Get User Video and keep reference as stream
-  navigator.mediaDevices
-    .getUserMedia({
-      video: constraints,
-      audio: true,
-    })
-    .then((stream) => {
-      if (myStream) {
-        changeVideoSignal(); //Tell other peers that i am changing my stream
-      }
-      sendVideoReadySignal();
-      addMyVideoStream(myVideo, stream);
-      myStream = stream;
-    });
+  if (isVideoShared || isAudioShared) {
+    navigator.mediaDevices
+      .getUserMedia({
+        video: isVideoShared ? currentConstraints : false,
+        audio: isAudioShared,
+      })
+      .then((stream) => {
+        if (myStream) {
+          changeVideoSignal(); //Tell other peers that i am changing my stream
+        }
+        sendVideoReadySignal();
+        addMyVideoStream(myVideo, stream);
+        myStream = stream;
+      });
+  } else {
+    const video = document.getElementById("MyOwnVideoStream");
+    videoGrid.removeChild(video);
+  }
 }
 
 function addMyVideoStream(video, stream) {
