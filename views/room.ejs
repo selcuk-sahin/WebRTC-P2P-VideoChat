@@ -58,6 +58,11 @@
             grid-template-columns: repeat(auto-fill, 300px);
             grid-auto-rows: 300px;
         }
+        #my-video-grid {
+          display: grid;
+            grid-template-columns: repeat(auto-fill, 300px);
+            grid-auto-rows: 300px;
+        }
 
         video {
             width: 100%;
@@ -72,6 +77,14 @@
     <!--[if lt IE 7]>
             <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
+        <div>
+          <button id="qvga">QVGA</button>
+          <button id="vga">VGA</button>
+          <button id="hd">HD</button>
+          <button id="full-hd">Full HD</button>
+        </div>    <div id="my-video-grid">
+
+    </div>
     <div id="video-grid"></div>
     <div id="message-container"></div>
     <form id="send-container">
