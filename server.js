@@ -67,6 +67,18 @@ io.on("connection", (socket) => {
       "started streaming"
     );
   });
+  socket.on("media-changed", (roomName, myPeerId) => {
+    socket.to(roomName).broadcast.emit("change-media", {
+      peerId: myPeerId,
+    });
+    console.log(
+      "in room",
+      roomName,
+      "with peerId",
+      myPeerId,
+      "Changed streaming media"
+    );
+  });
   socket.on("send-chat-message", (room, message) => {
     socket.to(room).broadcast.emit("chat-message", {
       message: message,

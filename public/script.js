@@ -96,6 +96,13 @@ socket.on("new-media", (peerIdObject) => {
   mediaCallToNewUser(peerIdObject.peerId, myStream);
 });
 
+socket.on("change-media", (peerIdObject) => {
+  appendMessage(`${peerIdObject.peerId} started a video stream`);
+  //streamType = "screen" or "video"
+  removeFromGrid(peerIdObject.peerId);
+  mediaCallToNewUser(peerIdObject.peerId, myStream);
+});
+
 socket.on("new-data", (peerId) => {
   appendMessage(`${peerId} started a data stream`);
   connectToNewUser(peerId, myStream);
@@ -149,6 +156,7 @@ const vgaButton = document.querySelector("#vga");
 const qvgaButton = document.querySelector("#qvga");
 const hdButton = document.querySelector("#hd");
 const fullHdButton = document.querySelector("#full-hd");
+const sharescreenButton = document.querySelector("#share-screen");
 const qvgaConstraints = {
   video: { width: { exact: 320 }, height: { exact: 240 } },
 };
@@ -173,10 +181,35 @@ hdButton.onclick = () => {
 fullHdButton.onclick = () => {
   getMedia(fullHdConstraints);
 };
+sharescreenButton.onclick = () => {
+  startCaptureScreen().then(
+    (stream) => {
+      sendVideoReadySignal();
+      changeVideoSignal(); //Tell other peers that i am changing my stream
+      addMyVideoStream(myVideo, stream);
+      myStream = stream;
+    },
+    (err) => {
+      console.log(err);
+    }
+  );
+};
 
 function sendVideoReadySignal() {
   socket.emit("media-ready", roomName, myPeerId);
   appendMessage("media-ready signal sent");
+}
+
+//switching from screen share to video vice versa.
+function changeVideoSignal() {
+  socket.emit("media-changed", roomName, myPeerId);
+  appendMessage("media-change signal sent");
+}
+
+//streamType = "screen" or "video"
+function removeFromGrid(peerId, streamType) {
+  const video = document.getElementById(peerId);
+  videoGrid.removeChild(video);
 }
 
 function sendDataReadySignal() {
@@ -248,6 +281,25 @@ function addVideoStream(video, stream) {
 }
 
 //Share Screen
+
+async function startCaptureScreen() {
+  //we also want to keep audio attached
+  const screenShareOptions = {
+    video: true,
+    audio: true,
+  };
+  let captureStream = null;
+  try {
+    captureStream = await navigator.mediaDevices.getDisplayMedia(
+      screenShareOptions
+    );
+  } catch (err) {
+    console.error("Error: " + err);
+  }
+  return captureStream;
+}
+
+//add
 
 //Text functions
 
