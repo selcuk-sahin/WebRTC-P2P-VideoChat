@@ -11,6 +11,7 @@ const messageContainer = document.getElementById("message-container");
 const roomContainer = document.getElementById("room-container");
 const messageForm = document.getElementById("send-container");
 const messageInput = document.getElementById("message-input");
+const fileInput = document.getElementById("file-input");
 const PeerMediaConnections = {};
 const PeerDataConnections = {};
 const streams = [];
@@ -57,6 +58,44 @@ socket.on("room-created", (room) => {
 // PeerMediaConnections[peerId] = call;
 // }
 
+function shareFile(peerId, file) {
+  // Split data channel message in chunks of this byte length.
+  var CHUNK_LEN = 64000;
+  var len = file.data.byteLength;
+  var n = (len / CHUNK_LEN) | 0;
+  //create a new data type connection and store the reference
+  const dataConn = myPeer.connect(peerId);
+  PeerDataConnections[peerId] = dataConn;
+  if (file) {
+    console.log("file exists");
+  }
+  console.log("Sending a total of " + len + " byte(s)");
+  for (var i = 0; i < n; i++) {
+    var start = i * CHUNK_LEN,
+      end = (i + 1) * CHUNK_LEN;
+    console.log(start + " - " + (end - 1));
+    dataConn.send(file.data.subarray(start, end));
+  }
+  if (len % CHUNK_LEN) {
+    console.log("last " + (len % CHUNK_LEN) + " byte(s)");
+    dataConn.send(file.data.subarray(n * CHUNK_LEN));
+  }
+  socket.emit("new-file-share", roomName, peerId);
+}
+
+socket.on("new-file", (peerIdObject) => {
+  appendMessage(`${peerIdObject.peerId} started a new file transfer`);
+  //mediaCallToNewUser(peerIdObject.peerId, myStream);
+  // var dataConnection = PeerDataConnections[peerIdObject.peerId];
+  // if (!dataConnection) {
+  //   dataConnection = myPeer.connect(peerIdObject.peerId);
+  // }
+  // dataConnection.on("data", (file) => {
+  //   console.log("someone wants to send me data");
+  //   console.log(file)
+  // });
+});
+
 //connect and call the user, store the call reference in peers array
 function mediaCallToNewUser(peerId, myStream) {
   //We are calling the other side with our own video
@@ -65,8 +104,8 @@ function mediaCallToNewUser(peerId, myStream) {
   } else {
     streamexists = 0;
   }
-  const dataConn = myPeer.connect(peerId);
-  PeerDataConnections[peerId] = dataConn;
+  // const dataConn = myPeer.connect(peerId);
+  // PeerDataConnections[peerId] = dataConn;
   appendMessage("Connection to " + peerId + " stream:" + streamexists);
   const call = myPeer.call(peerId, myStream);
   call.on("stream", (peerStream) => {
@@ -110,7 +149,10 @@ socket.on("new-data", (peerId) => {
 
 //If we receive incoming connection from a peer
 myPeer.on("connection", (dataConnection) => {
-  appendMessage("incoming conn established");
+  appendMessage("data connection established");
+  dataConnection.on("data", (file) => {
+    console.log(file);
+  });
 });
 
 //If a user disconnects, closes connection to other peers
@@ -321,9 +363,16 @@ if (messageForm != null) {
   messageForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const message = messageInput.value;
-    appendMessage(`You: ${message}`);
-    socket.emit("send-chat-message", roomName, message);
+    if (message != "") {
+      appendMessage(`You: ${message}`);
+      socket.emit("send-chat-message", roomName, message);
+    }
+    if (fileInput.value) {
+      const file = fileInput.value;
+      shareFile(myPeerId, file);
+    }
     messageInput.value = "";
+    fileInput.value = "";
   });
 }
 
