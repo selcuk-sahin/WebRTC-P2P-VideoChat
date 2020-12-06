@@ -185,7 +185,9 @@ sharescreenButton.onclick = () => {
   startCaptureScreen().then(
     (stream) => {
       sendVideoReadySignal();
-      changeVideoSignal(); //Tell other peers that i am changing my stream
+      if (myStream) {
+        changeVideoSignal(); //Tell other peers that i am changing my stream
+      }
       addMyVideoStream(myVideo, stream);
       myStream = stream;
     },
@@ -258,6 +260,9 @@ function getMedia(constraints) {
       audio: true,
     })
     .then((stream) => {
+      if (myStream) {
+        changeVideoSignal(); //Tell other peers that i am changing my stream
+      }
       sendVideoReadySignal();
       addMyVideoStream(myVideo, stream);
       myStream = stream;
