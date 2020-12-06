@@ -7,6 +7,7 @@ const myPeer = new Peer(undefined, {
 
 const PeerMediaConnections = {};
 const PeerDataConnections = {};
+const streams = [];
 
 //Compability with other browsers
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
@@ -21,6 +22,33 @@ socket.on("room-created", (room) => {
   roomContainer.append(roomElement);
   roomContainer.append(roomLink);
 });
+
+//connect and call the user, store the call reference in peers array
+function connectToNewUser(peerId, stream) {
+  if (stream) {
+    var streamexists = 1;
+  } else {
+    streamexists = 0;
+  }
+  const dataConn = myPeer.connect(peerId);
+  PeerDataConnections[peerId] = dataConn;
+  appendMessage("Connection to " + peerId + " stream:" + streamexists);
+  const call = myPeer.call(peerId, stream);
+  call.on("stream", (peerStream) => {
+    console.log(peerStream)
+    if (!streams.includes(peerStream.id)) {
+      const video = document.createElement("video");
+      video.setAttribute("id", peerId)
+      addVideoStream(video, peerStream)
+      streams.push(peerStream.id)
+    }
+  });
+  call.on("close", () => {
+    const video = document.getElementById(peerId)
+    videoGrid.removeChild(video)
+  });
+  PeerMediaConnections[peerId] = call;
+}
 
 //A new user connected to channel
 socket.on("user-connected", (socketId, userName, peerId) => {
@@ -40,40 +68,32 @@ socket.on("user-disconnected", (userId, userName, peerId) => {
   if (PeerDataConnections[peerId]) PeerDataConnections[peerId].close();
 });
 
-//connect and call the user, store the call reference in peers array
-function connectToNewUser(peerId, stream) {
-  if (stream) {
-    var streamexists = 1;
-  } else {
-    streamexists = 0;
-  }
-  const dataConn = myPeer.connect(peerId);
-  PeerDataConnections[peerId] = dataConn;
-  appendMessage("Connection to " + peerId + " stream:" + streamexists);
-  const call = myPeer.call(peerId, stream);
-  call.on("stream", (peerStream) => {
-    const video = document.createElement("video");
-    addVideoStream(video, peerStream);
-  });
-  PeerMediaConnections[peerId] = call;
-}
+
 
 //Audio/ Video Functions
 
 // If we receive incoming call
 myPeer.on("call", (mediaConnection) => {
+  PeerMediaConnections[mediaConnection.peer] = mediaConnection;
   mediaConnection.answer(myStream);
-  const video = document.createElement("video");
   mediaConnection.on("stream", (remoteStream) => {
-    addVideoStream(video, remoteStream);
+    console.log(remoteStream)
+    if (!streams.includes(remoteStream.id)) {
+      const video = document.createElement("video");
+      video.setAttribute("id", mediaConnection.peer)
+      addVideoStream(video, remoteStream)
+      streams.push(remoteStream.id)
+    }
   });
   mediaConnection.on("close", () => {
-    video.remove();
     appendMessage("call on close");
+    const video = document.getElementById(mediaConnection.peer)
+    videoGrid.removeChild(video)
   });
   mediaConnection.on("error", (err) => {
     appendMessage("call on error" + err);
   });
+
 });
 
 const myVideo = document.createElement("video");
