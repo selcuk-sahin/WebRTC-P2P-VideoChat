@@ -1,10 +1,7 @@
-const socket = io("http://localhost:3000");
+const socket = io();
 const myVideoGrid = document.getElementById("my-video-grid");
 const videoGrid = document.getElementById("video-grid");
-const myPeer = new Peer(undefined, {
-  host: "/",
-  port: "3001",
-});
+const myPeer = new Peer(undefined, {});
 var myPeerId = ""; // will set when peer connection is established
 
 const messageContainer = document.getElementById("message-container");
@@ -218,33 +215,33 @@ const fullHdConstraints = {
 
 var isVideoShared = false;
 var isAudioShared = false;
-var currentConstraints = fullHdConstraints
+var currentConstraints = fullHdConstraints;
 
 vgaButton.onclick = () => {
-  currentConstraints = vgaConstraints
+  currentConstraints = vgaConstraints;
   getMedia();
 };
 qvgaButton.onclick = () => {
-  currentConstraints = qvgaConstraints
+  currentConstraints = qvgaConstraints;
   getMedia();
 };
 hdButton.onclick = () => {
-  currentConstraints = hdConstraints
+  currentConstraints = hdConstraints;
   getMedia();
 };
 fullHdButton.onclick = () => {
-  currentConstraints = fullHdConstraints
+  currentConstraints = fullHdConstraints;
   getMedia();
 };
 
 videoButton.onclick = () => {
   if (isVideoShared) {
-    videoButton.innerText = "Open Camera"
-    isVideoShared = false
+    videoButton.innerText = "Open Camera";
+    isVideoShared = false;
     qualitySettings.hidden = true;
-    getMedia()
+    getMedia();
   } else {
-    videoButton.innerText = "Close Camera"
+    videoButton.innerText = "Close Camera";
     isVideoShared = true;
     qualitySettings.hidden = false;
     getMedia();
@@ -253,17 +250,16 @@ videoButton.onclick = () => {
 
 audioButton.onclick = () => {
   if (isAudioShared) {
-    audioButton.innerText = "Open Microphone"
-    isAudioShared = false
-    getMedia()
+    audioButton.innerText = "Open Microphone";
+    isAudioShared = false;
+    getMedia();
   } else {
-    audioButton.innerText = "Close Microphone"
+    audioButton.innerText = "Close Microphone";
     isAudioShared = true;
     qualitySettings.hidden = false;
     getMedia();
   }
 };
-
 
 const isScreenShared = false;
 sharescreenButton.onclick = () => {
@@ -313,10 +309,10 @@ function displayVideoDimensions(whereSeen) {
   if (myVideo.videoWidth) {
     console.log(
       "Actual video dimensions: " +
-      myVideo.videoWidth +
-      "x" +
-      myVideo.videoHeight +
-      "px."
+        myVideo.videoWidth +
+        "x" +
+        myVideo.videoHeight +
+        "px."
     );
     console.log(whereSeen + ": ");
   } else {
