@@ -103,7 +103,7 @@ function mediaCallToNewUser(peerId, myStream) {
   }
   // const dataConn = myPeer.connect(peerId);
   // PeerDataConnections[peerId] = dataConn;
-  appendMessage("Connection to " + peerId + " stream:" + streamexists);
+  // appendMessage("Connection to " + peerId + " stream:" + streamexists);
   const call = myPeer.call(peerId, myStream);
   call.on("stream", (peerStream) => {
     console.log(peerStream);
@@ -280,13 +280,13 @@ sharescreenButton.onclick = () => {
 
 function sendVideoReadySignal() {
   socket.emit("media-ready", roomName, myPeerId);
-  appendMessage("media-ready signal sent");
+  // appendMessage("media-ready signal sent");
 }
 
 //switching from screen share to video vice versa.
 function changeVideoSignal() {
   socket.emit("media-changed", roomName, myPeerId);
-  appendMessage("media-change signal sent");
+  // appendMessage("media-change signal sent");
 }
 
 //streamType = "screen" or "video"
