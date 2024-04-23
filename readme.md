@@ -1,3 +1,8 @@
+## About
+
+A simple application built with express.js, hosting videochat/screen-sharing ability via WebRTC and sockets.
+This was a school project and completed in 2 weeks.
+
 ## Requirements
 
 For node js : install node.js  
